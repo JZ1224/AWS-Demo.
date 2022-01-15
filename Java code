@@ -1,0 +1,82 @@
+package com.example.awsdemo;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+import android.os.Bundle;
+import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ListView;
+import android.widget.Toast;
+
+import com.parse.FindCallback;
+import com.parse.ParseException;
+import com.parse.ParseObject;
+import com.parse.ParseQuery;
+import com.parse.ParseUser;
+import com.parse.SaveCallback;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class MainActivity2 extends AppCompatActivity {
+
+    // chat room in AWS
+    // step 1: type in the message and send it AWS
+    // step 2: download all messages from AWS and show it to the app
+
+    Button button;
+    EditText editText;
+    ListView listView;
+    ArrayList<String> messageArray;
+    ArrayAdapter arrayAdapter;
+
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main2);
+        button = findViewById(R.id.button3);
+        editText = findViewById(R.id.editTextTextPersonName2);
+        listView = findViewById(R.id.listView);
+        messageArray = new ArrayList<>();
+        arrayAdapter = new ArrayAdapter<>(getApplicationContext(),android.R.layout.simple_list_item_1, messageArray);
+
+        button.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View v) {
+                String input = editText.getText().toString();
+                String username = ParseUser.getCurrentUser().getUsername();
+                String message = input + "by " + username;
+                ParseObject object = new ParseObject("message");
+                object.put("message", message);
+                object.put("username", username);
+                object.saveInBackground(new SaveCallback() {
+                    @Override
+                    public void done(ParseException e) {
+                        if (e != null){
+                            Toast.makeText(MainActivity2.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+
+                ParseQuery<ParseObject> query = new ParseQuery<ParseObject>("message");
+                query.orderByDescending("createdAt");
+                query.findInBackground(new FindCallback<ParseObject>() {
+                    @Override
+                    public void done(List<ParseObject> objects, ParseException e) {
+                        if (e == null){
+                            messageArray.clear();
+                            for (ParseObject object: objects){
+                                messageArray.add(object.get("message").toString());
+                            }
+                            listView.setAdapter(arrayAdapter);
+                        }
+                    }
+                });
+            }
+        });
+    }
+}
